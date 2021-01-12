@@ -16,13 +16,13 @@ class Ui_Form(object):
         #test
         self.image_label1 = QtWidgets.QLabel(Form)
         self.image_label1.setObjectName("image_label1")
-
-        #self.verticalLayout.addWidget(self.image_label1)
+   
 
         self.control_bt = QtWidgets.QPushButton(Form)
         self.control_bt.setObjectName("control_bt")
 
         self.verticalLayout.addWidget(self.control_bt)
+
         self.horizontalLayout.addLayout(self.verticalLayout)
 
         self.retranslateUi(Form)
@@ -32,5 +32,5 @@ class Ui_Form(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Barcode Reader"))
         self.image_label.setText(_translate("Form", ""))
-        self.image_label1.setText(_translate("Form", "kuuk"))
+        self.image_label1.setText(_translate("Form", ""))
         self.control_bt.setText(_translate("Form", "Start"))
