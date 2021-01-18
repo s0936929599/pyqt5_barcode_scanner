@@ -17,6 +17,8 @@ from cam_ui import *
 import numpy as np
 import threading
 
+
+
 class MainWindow(QWidget):
     # class constructor
     def __init__(self):
@@ -72,6 +74,7 @@ class MainWindow(QWidget):
         ret, image = self.cap.read()
         #  image  barcode b
         image = self.read_barcodes(image)
+        #image=threading.Thread(target=self.read_barcodes,args=(image,)).start()
         # convert image to RGB format
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -97,7 +100,7 @@ class MainWindow(QWidget):
             
             # add text to ui
             
-            self.ui.image_label1.setText('Wait for connecting')
+            self.ui.image_label1.setText('Wait for connecting to camera')
             self.ui.image_label1.resize(640,480)
             self.ui.image_label1.setAlignment(PyQt5.QtCore.Qt.AlignCenter)   
             self.ui.image_label1.setFont(QFont('Times', 30,QFont.Bold))
@@ -132,16 +135,26 @@ class MainWindow(QWidget):
     # decode barcodes  
     def read_barcodes(self,frame):
         barcodes = pyzbar.decode(frame)
+        print(barcodes)
+
         for barcode in barcodes:
-            x, y , w, h = barcode.rect
-            #1
-            barcode_info = barcode.data.decode('utf-8')
-            cv2.rectangle(frame, (x, y),(x+w, y+h), (0, 255, 0), 2) #cv2.rectangle(影像, 頂點座標, 對向頂點座標, 顏色, 線條寬度)
             
-            #2
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, barcode_info, (x + 6, y - 6), font, 1.0, (255, 255, 255), 1) # cv2.putText(影像, 文字, 座標, 字型, 大小, 顏色, 線條寬度, 線條種類)
-            #3
+            x, y , w, h = barcode.rect
+            print((x+w)/(y+h))
+            #1
+
+            #if (x+w)/(y+h)<3 and (x+w)/(y+h)>=1:
+            if  w>h and (x+w)/(y+h)>0 :
+            
+            #data.append((x+w)/(y+h))
+                barcode_info = barcode.data.decode('utf-8')
+
+                cv2.rectangle(frame, (x, y),(x+w, y+h), (0, 255, 0), 2) #cv2.rectangle(影像, 頂點座標, 對向頂點座標, 顏色, 線條寬度) 
+                    
+                    #2
+                font = cv2.FONT_HERSHEY_DUPLEX
+                #cv2.putText(frame, barcode_info, (x + 6, y - 6), font, 1.0, (255, 255, 255), 1) # cv2.putText(影像, 文字, 座標, 字型, 大小, 顏色, 線條寬度, 線條種類)
+                cv2.putText(frame, str((x+w)/(y+h)), (x + 6, y - 3), font, 1.0, (255, 255, 255), 1)
             #with open("barcode_result.txt", mode ='w') as file:
             #    file.write("Recognized Barcode:" + barcode_info)
         return frame
@@ -160,5 +173,5 @@ if __name__ == '__main__':
     # create and show mainWindow
     mainWindow = MainWindow()
     mainWindow.show()
-
+   
     sys.exit(app.exec_())
