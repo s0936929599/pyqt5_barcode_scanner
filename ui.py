@@ -1,3 +1,4 @@
+#pyuic5 xyz.ui > xyz.py 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_Form(object):
@@ -30,7 +31,7 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Barcode Reader"))
+        Form.setWindowTitle(_translate("Form", "Barcode Scanner"))
         self.image_label.setText(_translate("Form", ""))
         self.image_label1.setText(_translate("Form", ""))
         self.control_bt.setText(_translate("Form", "Start"))
