@@ -1,7 +1,7 @@
 import sys
 import PyQt5.QtGui
 # import some PyQt5 modules
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication,QAction
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QPixmap
@@ -24,9 +24,13 @@ clr.FindAssembly("sick_vision_api_dotnet.dll")
 clr.AddReference('sick_vision_api_dotnet')
 import vision_api 
 from System import IntPtr
+import multiprocessing as mp
 
 bRuning,bGet,frame = True ,False ,None
-dataStream,count=0,0
+
+dataStream,deviceCount,count=0,0,0
+
+
 
 class MainWindow(QWidget):
     # class constructor
@@ -42,7 +46,6 @@ class MainWindow(QWidget):
         # make a black view
         self.img = np.zeros([640,480,3],dtype=np.uint8)
         self.img.fill(0)
-        
 
         self.qImg = QImage(self.img.data, 640,480,1920 , QImage.Format_RGB888) 
         
@@ -59,34 +62,17 @@ class MainWindow(QWidget):
         self.ui.control_bt.clicked.connect(self.thread_sick_cam)
         
         
-
-    # view camera
-    def viewCam(self):
-        # read image in BGR format
-        ret, image = self.cap.read()
-        #  image  barcode b
-        image = self.read_barcodes(image)
-        #image=threading.Thread(target=self.read_barcodes,args=(image,)).start()
-        # convert image to RGB format
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # get image infos
-        height, width, channel = image.shape
-
-       
-
-        step = channel * width
-        # create QImage from image
-        #qImg = QImage(image.data, width, height, step, QImage.Format_RGB888) # memory at 0x000001E0B6CBFB88 640 480 1920 13
-
-        
-        # show image in img_label
-        self.ui.image_label.setPixmap(QPixmap.fromImage(qImg))
+    #close window to call this funtion  
+    def closeEvent(self, event):
+        global bRuning
+        bRuning=False
+        sys.exit()
 
     def thread_sick_cam(self):
-        global frame,bGet,bRuning
+        global frame,bGet,bRuning,deviceCount,deviceManager,t1
         
         if self.ui.control_bt.text()=='Start':
+
             self.ui.image_label1.setText('Wait for connecting to camera')
             self.ui.image_label1.resize(640,480)
             self.ui.image_label1.setAlignment(PyQt5.QtCore.Qt.AlignCenter)   
@@ -96,12 +82,17 @@ class MainWindow(QWidget):
             QApplication.processEvents()
             self.ui.image_label1.setText('')
 
-                #update ui 
-            
+            #update ui 
+                
             bRuning=True
             threading.Thread(target=self.sick_cam).start()
+            #close thread when main thread closing
+            #self.t1=threading.Thread(target=self.sick_cam)
+            #t1.setDaemon(True)
+            #self.t1.start()
+            #mp.Process(target=self.sick_cam).start()
             time.sleep(3)
-            print(self.ui.control_bt.text())
+            #print(self.ui.control_bt.text())
             while self.ui.control_bt.text()=='Stop':
                 #print(bGet)
                 while bGet==False:time.sleep(0.01)
@@ -118,16 +109,16 @@ class MainWindow(QWidget):
     
             bRuning=False
             self.ui.control_bt.setText("Start")
-
             QApplication.processEvents()
     def sick_cam(self):
-        global bRuning,bGet,frame,dataStream,count
-
+        global bRuning,bGet,frame,dataStream,count,deviceCount
+        
         frameCounter = 0
         vision_api.Library.Initialize()
         deviceManager = vision_api.DeviceManager.Instance()
         deviceManager.Update()
         deviceCount = deviceManager.Devices().Count
+        
         #d = deviceManager.Devices()[i]
         #print(f'{d.ModelName()}')
         #print(f'{d.ParentInterface().DisplayName()}')
@@ -180,54 +171,12 @@ class MainWindow(QWidget):
                 dataStream.QueueBuffer(buffer);
                 bGet = True
                 #frameCounter += 1
-                #print(frameCounter)
-        
-
-
-    # start/stop timer
-    def controlTimer(self):
-        # if timer is stopped
-        if not self.timer.isActive():
-            #threading.Thread(target = self.ui_connecting).start()
-            
-            # add text to ui
-            
-            self.ui.image_label1.setText('Wait for connecting to camera')
-            self.ui.image_label1.resize(640,480)
-            self.ui.image_label1.setAlignment(PyQt5.QtCore.Qt.AlignCenter)   
-            self.ui.image_label1.setFont(QFont('Times', 30,QFont.Bold))
-            self.ui.image_label1.setStyleSheet('color: white') 
-            #update ui 
-            QApplication.processEvents()
-
-            self.ui.image_label1.setText('')
-            # create video capture
-            self.cap = cv2.VideoCapture(0)
-            
-            if not self.cap.isOpened(): 
-                msgBox = QMessageBox()
-                msgBox.setText("Failed to open camera.")
-                msgBox.setWindowTitle("Warning")
-                msgBox.exec_()
-                return
-            
-            # start timer
-            self.timer.start(1)
-            # update control_bt text
-            self.ui.control_bt.setText("Stop")
-        # if timer is started
-        else:
-            # stop timer
-            self.timer.stop()
-            # release video capture
-            self.cap.release()
-            # update control_bt text
-            self.ui.control_bt.setText("Start")
+                    #print(frameCounter)
 
     # decode barcodes  
     def read_barcodes(self,frame):
         barcodes = pyzbar.decode(frame)
-        print(barcodes)
+        #print(barcodes)
 
         for barcode in barcodes:
             
@@ -261,9 +210,7 @@ class MainWindow(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-
     # create and show mainWindow
     mainWindow = MainWindow()
     mainWindow.show()
-   
     sys.exit(app.exec_())
