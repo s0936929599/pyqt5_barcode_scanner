@@ -65,7 +65,7 @@ class MainWindow(QWidget):
         iRuning=False
         sys.exit()
     def bt_saveimage(self):
-        global bRuning,image_s
+        global bRuning,image_s,iRuning
 
         device_ = AXMVS100_dotNet.AXMVS100();
         result = device_.AXMVS100_LightingCtrl_SetConfig(1,0,0,0,0,0,0,1)
@@ -75,6 +75,7 @@ class MainWindow(QWidget):
             number=1
             while status==1:
                 while os.path.exists(f'{number}.jpg'):number+=1
+                image_s=image_s[...,::-1] #BGR to RGB
                 cv2.imwrite(f'{number}.jpg',image_s)
                 result = device_.AXMVS100_LightingCtrl_Enable(1)
                 #print(f'Enable True:{result}')
@@ -85,7 +86,7 @@ class MainWindow(QWidget):
                 status=0
 
     def thread_sick_cam(self):
-        global frame,bGet,bRuning,deviceCount,deviceManager,t1,image_s
+        global frame,bGet,bRuning,deviceCount,deviceManager,t1,image_s,iRuning
         
         if self.ui.control_bt.text()=='Start':
 
@@ -101,9 +102,10 @@ class MainWindow(QWidget):
             #update ui 
                 
             bRuning=True
-            threading.Thread(target=self.sick_cam).start()
+            iRuning=True
+            threading.Thread(target=self.sick_cam).start()     
             threading.Thread(target=self.bt_saveimage).start()
-
+         
             time.sleep(3)
 
             while self.ui.control_bt.text()=='Stop':
@@ -118,8 +120,9 @@ class MainWindow(QWidget):
                 self.ui.image_label.setPixmap(QPixmap.fromImage(qImg))
                 QApplication.processEvents()
         else:
-    
+
             bRuning=False
+            iRuning=False
             self.ui.control_bt.setText("Start")
             QApplication.processEvents()
     def sick_cam(self):
@@ -158,7 +161,7 @@ class MainWindow(QWidget):
             npArray = None
             destPtr = None
             while bRuning:
-                while dataStream.NumBuffersAwaitDelivery()<1:time.sleep(0.001)
+                while dataStream.NumBuffersAwaitDelivery()<1:time.sleep(0.1)
                 buffer = dataStream.WaitForFinishedBuffer(vision_api.core.Timeout(0))
                 if npArray is None:
                     npArray = np.empty(buffer.Size(), order='C', dtype=np.dtype('uint8'))
@@ -172,7 +175,7 @@ class MainWindow(QWidget):
             npArray = None
             destPtr = None
             while bRuning:
-                while dataStream.NumBuffersAwaitDelivery()<1:time.sleep(0.001)
+                while dataStream.NumBuffersAwaitDelivery()<1:time.sleep(0.1)
                 buffer = dataStream.WaitForFinishedBuffer(vision_api.core.Timeout(0))
                 if npArray is None:
                     npArray = np.empty(buffer.Size(), order='C', dtype=np.dtype('uint8'))
@@ -205,7 +208,7 @@ class MainWindow(QWidget):
                     
                     #2
                 font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame_1, barcode_info, (x + 6, y - 6), font, 1.0, (255, 255, 255), 1) # cv2.putText(影像, 文字, 座標, 字型, 大小, 顏色, 線條寬度, 線條種類)
+                cv2.putText(frame_1, barcode_info, (x + 6, y - 6), font, 1.2, (255, 0, 0), 1) # cv2.putText(影像, 文字, 座標, 字型, 大小, 顏色, 線條寬度, 線條種類)
                 #cv2.putText(frame, str((x+w)/(y+h)), (x + 6, y - 3), font, 1.0, (255, 255, 255), 1)
             #with open("barcode_result.txt", mode ='w') as file:
             #    file.write("Recognized Barcode:" + barcode_info)
@@ -225,4 +228,5 @@ if __name__ == '__main__':
     mainWindow = MainWindow()
     mainWindow.show()
     sys.exit(app.exec_())
+
 
