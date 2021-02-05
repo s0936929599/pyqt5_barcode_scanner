@@ -25,12 +25,12 @@ clr.AddReference('sick_vision_api_dotnet')
 import vision_api 
 clr.FindAssembly('AXMVS100_dotNet.dll')
 clr.AddReference('AXMVS100_dotNet')
-import TriggerOut 
+import MVS_trigger
 import AXMVS100_dotNet
 from System import IntPtr
 import multiprocessing as mp
 from multiprocessing import Process, Queue
-TriggerOut.main()
+MVS_trigger.main()
 bRuning,bGet,frame,iRuning,sRunning,get_image= True ,False ,None,True,False,True
 
 dataStream,deviceCount,count,image_s,status=0,0,0,0,0
@@ -75,11 +75,17 @@ class MainWindow(QWidget):
             while bGet==False and bRuning:time.sleep(0.001)
             bGet = False
             #print(threading.active_count())
+            number=1
+            if bRuning==False:
+                break
+            while os.path.exists(f'{number}.jpg'):number+=1
             try:
                 image = cv2.resize(frame,(640,480)).reshape((480,640,1))
                 image_s=np.concatenate((image,image,image),axis=2)
                 image_s=self.read_barcodes(image_s)
                 qImg = QImage(image_s.data, 640, 480, 1920, QImage.Format_RGB888)
+                image_s=image_s[...,::-1] #BGR to RGB
+                cv2.imwrite(f'{number}.jpg',image_s)
                 self.ui.image_label.setPixmap(QPixmap.fromImage(qImg))
                 QApplication.processEvents()
             except:
